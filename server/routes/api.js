@@ -137,14 +137,17 @@ router.post('/addEvent', (req, res) => {
   })
 })
 
+router.put('/getEvent', (req, res) => {
+  let eventID = req.body;
+  Event.findById({_id: eventID._id},(error, event) => {
+    if(event){
+      res.status(200).send(event);
+    }else {
+      res.status(401).send(err);
+    }
+  })
+})
 router.get('/events', (req, res) => {
-  // Event.find((error, events) => {
-  //   if(error) {
-  //     res.status(401).send('Unable to get events');
-  //   } else {
-  //     res.status(200).send(events);
-  //   }
-  // })
   Event.find()
   .sort("date")
   .exec(function(err, items){
