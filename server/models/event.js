@@ -10,6 +10,8 @@ const eventSchema = new Schema ({
     address: String,
     poster: String,
     start_time: String,
-    end_time: String
+    end_time: String,
+    contact: String,
+    organiser: String
 })
 module.exports = mongoose.model('event', eventSchema, 'events');

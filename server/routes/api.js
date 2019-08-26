@@ -6,7 +6,7 @@ const Event = require('../models/event');
 const jwt = require('jsonwebtoken')
 const db = 'mongodb://localhost:27017/Top6DB';
 const bcrypt = require('bcryptjs');
-
+const moment = require('moment');
 mongoose.connect(db, err => {
   if (err) {
     console.log('error: ', err);
@@ -100,7 +100,6 @@ router.post('/login', (req, res) => {
           if (!result) {
             res.status(401).send('Invalid password');
           } else {
-            console.log("User successfully logged in.");
             user.password = userData.password;
             let payload = { subject: user._id }
             let token = jwt.sign(payload, 'top6events');
@@ -121,7 +120,23 @@ router.post('/login', (req, res) => {
     }
   })
 })
-
+router.put('/getUserProfile', (req, res) => {
+  let userID = req.body;
+  User.findById({_id: userID._id},(error, userIfon) => {
+    if(userIfon){
+      let userDetails = {
+        name: userIfon.name,
+        surname: userIfon.surname,
+        email: userIfon.email,
+        mobile: userIfon.mobile,
+        _id: userIfon._id
+      }
+      res.status(200).send(userDetails);
+    }else {
+      res.status(401).send(error);
+    }
+  })
+})
 
 //events functions
 router.post('/addEvent', (req, res) => {
@@ -137,13 +152,47 @@ router.post('/addEvent', (req, res) => {
   })
 })
 
+router.post('/updateEvent', (req, res) => {
+  let eventData = req.body;
+  Event.findByIdAndUpdate({_id: eventData._id}, req.body, (err, event)=> {
+    if(err) {
+      res.status(401).send(err);
+      console.log(err);
+    }else {
+      res.status(200).send(event);
+    }
+  })
+})
+
+router.put('/deleteEvent', (req, res) => {
+  let eventData = req.body;
+  Event.findByIdAndDelete({_id: eventData._id}, (err, event) => {
+    if(err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(event);
+    }
+  })
+})
+
 router.put('/getEvent', (req, res) => {
   let eventID = req.body;
   Event.findById({_id: eventID._id},(error, event) => {
     if(event){
       res.status(200).send(event);
     }else {
-      res.status(401).send(err);
+      res.status(401).send(error);
+    }
+  })
+})
+
+router.put('/getUserEvents', (req, res) => {
+  let user = req.body;
+  Event.find({userID: user.userID},(error, event) => {
+    if(event){
+      res.status(200).send(event);
+    }else {
+      res.status(401).send(error);
     }
   })
 })
@@ -151,63 +200,19 @@ router.get('/events', (req, res) => {
   Event.find()
   .sort("date")
   .exec(function(err, items){
-      if(err) console.log("Error Finding Query " + err);
+      if(err) console.log("Error Finding Query " + err);    
+      let date = moment(Date.now()).format('YYYY-MM-DD');
+      let array;
+      items.forEach(element => {
+        array = element.date;
+      });
+
       res.send(items);
   });
 })
-//router.get('/special', verifyToken, (req, res) => {
 router.get('/special', verifyToken, (req, res) => {
-  let specialEvents = [
-    {
-      "_id": "1",
-      "name": "Auto 1 Special",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    },
-    {
-      "_id": "2",
-      "name": "Auto l",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    },
-    {
-      "_id": "3",
-      "name": "Auto 34 Special",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    },
-    {
-      "_id": "4",
-      "name": "Auto 43 Special",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    },
-    {
-      "_id": "5",
-      "name": "Auto 4334343 Special",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    },
-    {
-      "_id": "6",
-      "name": "Auto 434343 Special",
-      "description": "lorem ipsum",
-      "date": "2012-04-23T18:25:43.511Z",
-      "poster": "https://i.ibb.co/XLKBMz2/Events.jpg",
-      "address": "173 Moye Street, Lufhereng, Soweto, 1863"
-    }
-  ]
-  res.json(specialEvents)
+
+ 
 })
 
 
