@@ -13,6 +13,8 @@ const path = require('path');
 const PDF = require('pdfkit'); 
 const fs = require('fs');
 const invoice = new PDF();
+const tag  = require('html-tag');
+
 //--PDF
 
 const multer = require('multer');
@@ -162,20 +164,20 @@ router.put('/getUserProfile', (req, res) => {
 router.get('/invoicePDF', (req, res) => {
   let eventID = req.body;
   Event.findById({ _id: eventID._id }, (error, event) => {
-    console.log(event.name);
-    let data  = `
-      Event Name        : ${event.name}
-      Event Date        : ${event.date}
-      Event Address     : ${event.address}
-      Event Time        : ${event.start_time}  to ${event.end_time}
-      Event Ticket      : R50
-      </html>
-    `
+    // console.log(event.name);
+    // let data  = `
+    //   Event Name        : ${event.name}
+    //   Event Date        : ${event.date}
+    //   Event Address     : ${event.address}
+    //   Event Time        : ${event.start_time}  to ${event.end_time}
+    //   Event Ticket      : R50
+    //   </html>
+    // `
     if (event) {
       res.status(200).send(event);
-      invoice.pipe(fs.createWriteStream(`${event.name}-${event.date}-invoice.pdf`));
-      invoice.text(data, 20, 20);
-      invoice.end();
+      // invoice.pipe(fs.createWriteStream(`${event.name}-${event.date}-invoice.pdf`));
+      // invoice.text(data, 20, 20);
+      // invoice.end();
     } else {
       res.status(401).send(error);
     }
