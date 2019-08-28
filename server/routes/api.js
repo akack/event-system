@@ -161,7 +161,7 @@ router.put('/getUserProfile', (req, res) => {
 
 //events functions
 
-router.get('/invoicePDF', (req, res) => {
+router.put('/invoicePDF', (req, res) => {
   let eventID = req.body;
   Event.findById({ _id: eventID._id }, (error, event) => {
     // console.log(event.name);
