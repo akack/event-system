@@ -12,6 +12,7 @@ const eventSchema = new Schema ({
     start_time: String,
     end_time: String,
     contact: String,
-    organiser: String
+    organiser: String,
+    active: Boolean
 })
 module.exports = mongoose.model('event', eventSchema, 'events');

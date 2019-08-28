@@ -7,6 +7,25 @@ const jwt = require('jsonwebtoken')
 const db = 'mongodb://localhost:27017/Top6DB';
 const bcrypt = require('bcryptjs');
 const moment = require('moment');
+const path = require('path');
+
+//PDF
+const PDF = require('pdfkit'); 
+const fs = require('fs');
+const invoice = new PDF();
+//--PDF
+
+const multer = require('multer');
+const storage = multer.diskStorage({
+  destination: function (req, file, callback) {
+    callback(null, "./uploads/");
+  },
+  filename: function (req, file, callback) {
+    callback(null, file.fieldname + "_" + Date.now() + "_" + file.originalname);
+  }
+})
+const upload = multer({ storage });
+
 mongoose.connect(db, err => {
   if (err) {
     console.log('error: ', err);
@@ -122,8 +141,8 @@ router.post('/login', (req, res) => {
 })
 router.put('/getUserProfile', (req, res) => {
   let userID = req.body;
-  User.findById({_id: userID._id},(error, userIfon) => {
-    if(userIfon){
+  User.findById({ _id: userID._id }, (error, userIfon) => {
+    if (userIfon) {
       let userDetails = {
         name: userIfon.name,
         surname: userIfon.surname,
@@ -132,15 +151,60 @@ router.put('/getUserProfile', (req, res) => {
         _id: userIfon._id
       }
       res.status(200).send(userDetails);
-    }else {
+    } else {
       res.status(401).send(error);
     }
   })
 })
 
 //events functions
-router.post('/addEvent', (req, res) => {
-  let eventData = req.body;
+
+router.get('/invoicePDF', (req, res) => {
+  let eventID = req.body;
+  Event.findById({ _id: eventID._id }, (error, event) => {
+    console.log(event.name);
+    let data  = `
+      Event Name        : ${event.name}
+      Event Date        : ${event.date}
+      Event Address     : ${event.address}
+      Event Time        : ${event.start_time}  to ${event.end_time}
+      Event Ticket      : R50
+      </html>
+    `
+    if (event) {
+      res.status(200).send(event);
+      invoice.pipe(fs.createWriteStream(`${event.name}-${event.date}-invoice.pdf`));
+      invoice.text(data, 20, 20);
+      invoice.end();
+    } else {
+      res.status(401).send(error);
+    }
+  })
+})
+
+
+router.post('/addEvent', upload.single('poster'), (req, res) => {
+  //console.log(req.file);
+  // if (!req.file) {
+  //   console.log("No file received");
+  //   return res.send({
+  //     success: false
+  //   });
+
+  // } 
+   let eventData = req.body;
+ /*  {
+    name: req.body.name,
+    date: req.body.date,
+    userID: req.body.userID,
+    address: req.body.address,
+    // poster: req.file.path,
+    start_time: req.body.start_time,
+    end_time: req.body.end_time,
+    contact: req.body.contact,
+    organiser: req.body.organiser,
+    active: req.body.active
+  };*/
   let event = new Event(eventData);
   event.save((err, eventAdded) => {
     if (err) {
@@ -154,11 +218,23 @@ router.post('/addEvent', (req, res) => {
 
 router.post('/updateEvent', (req, res) => {
   let eventData = req.body;
-  Event.findByIdAndUpdate({_id: eventData._id}, req.body, (err, event)=> {
-    if(err) {
+  Event.findByIdAndUpdate({ _id: eventData._id }, req.body, (err, event) => {
+    if (err) {
       res.status(401).send(err);
       console.log(err);
-    }else {
+    } else {
+      res.status(200).send(event);
+    }
+  })
+})
+
+router.post('/updateEventStatus', (req, res) => {
+  let eventData = req.body;
+  Event.findByIdAndUpdate({ _id: eventData._id }, req.body, (err, event) => {
+    if (err) {
+      res.status(401).send(err);
+      console.log(err);
+    } else {
       res.status(200).send(event);
     }
   })
@@ -166,8 +242,8 @@ router.post('/updateEvent', (req, res) => {
 
 router.put('/deleteEvent', (req, res) => {
   let eventData = req.body;
-  Event.findByIdAndDelete({_id: eventData._id}, (err, event) => {
-    if(err) {
+  Event.findByIdAndDelete({ _id: eventData._id }, (err, event) => {
+    if (err) {
       res.status(401).send(err);
     } else {
       res.status(200).send(event);
@@ -177,10 +253,10 @@ router.put('/deleteEvent', (req, res) => {
 
 router.put('/getEvent', (req, res) => {
   let eventID = req.body;
-  Event.findById({_id: eventID._id},(error, event) => {
-    if(event){
+  Event.findById({ _id: eventID._id }, (error, event) => {
+    if (event) {
       res.status(200).send(event);
-    }else {
+    } else {
       res.status(401).send(error);
     }
   })
@@ -188,19 +264,19 @@ router.put('/getEvent', (req, res) => {
 
 router.put('/getUserEvents', (req, res) => {
   let user = req.body;
-  Event.find({userID: user.userID},(error, event) => {
-    if(event){
+  Event.find({ userID: user.userID }, (error, event) => {
+    if (event) {
       res.status(200).send(event);
-    }else {
+    } else {
       res.status(401).send(error);
     }
   })
 })
 router.get('/events', (req, res) => {
-  Event.find()
-  .sort("date")
-  .exec(function(err, items){
-      if(err) console.log("Error Finding Query " + err);    
+  Event.find({ active: true })
+    .sort("date")
+    .exec(function (err, items) {
+      if (err) console.log("Error Finding Query " + err);
       let date = moment(Date.now()).format('YYYY-MM-DD');
       let array;
       items.forEach(element => {
@@ -208,11 +284,39 @@ router.get('/events', (req, res) => {
       });
 
       res.send(items);
-  });
+    });
+})
+
+router.get('/getEvents', (req, res) => {
+  Event.find()
+    .sort("date")
+    .exec(function (err, items) {
+      if (err) console.log("Error Finding Query " + err);
+      let date = moment(Date.now()).format('YYYY-MM-DD');
+      let array;
+      items.forEach(element => {
+        array = element.date;
+      });
+
+      res.status(200).send(items);
+    });
+})
+router.put('/getActiveStatus', (req, res) => {
+  let eventID = req.body;
+  Event.findById({ _id: eventID._id })
+    .sort("date")
+    .exec((err, item) => {
+      if (err) {
+        console.log("Error Finding Query " + err);
+        res.status(401).send(err);
+      } else {
+        res.status(200).send(item);
+      }
+    })
 })
 router.get('/special', verifyToken, (req, res) => {
 
- 
+
 })
 
 
