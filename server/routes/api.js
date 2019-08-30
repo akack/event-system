@@ -7,13 +7,14 @@ const jwt = require('jsonwebtoken')
 const db = 'mongodb://localhost:27017/Top6DB';
 const bcrypt = require('bcryptjs');
 const moment = require('moment');
-const path = require('path');
-
+const nodemailer = require('nodemailer');
+const config = require('../config');
+const Booking = require('../models/booking');
 //PDF
-const PDF = require('pdfkit'); 
+const PDF = require('pdfkit');
 const fs = require('fs');
 const invoice = new PDF();
-const tag  = require('html-tag');
+const tag = require('html-tag');
 
 //--PDF
 
@@ -39,7 +40,6 @@ router.get('/', (req, res) => {
   res.send('Api call');
 })
 
-
 function verifyToken(req, res, next) {
   if (!req.headers.authorization) {
     return res.status(401).send('Unauthorized request')
@@ -55,8 +55,34 @@ function verifyToken(req, res, next) {
   req.userId = payload.subject
   next()
 }
-//user fuctions
 
+// Bookings ------------------------------------------------------------
+function makeid(length) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+
+router.post('/addBooking', (req, res) => {
+  // console.log();
+  // let r = Math.random().toString(36).substring(7);
+  let bookings = new Booking(req.body);
+  // let ticketN0 = makeid(5) +'_' + bookings.event_date;
+  // bookings.ticket_number = ticketN0.toUpperCase();
+  bookings.save((err, bookingInfo) => {
+    if(err) {res.status(401).send(err);}
+    else {
+      res.status(200).send(bookingInfo);
+    }
+  })
+})
+
+//user fuctions---------------------------------------------------------
 router.post('/register', (req, res) => {
   let userData = req.body;
   let user = new User(userData);
@@ -159,31 +185,30 @@ router.put('/getUserProfile', (req, res) => {
   })
 })
 
-//events functions
+router.get('/getUsers', (req, res)=> {
+  User.find({}, { 'password': 0} )
+  .sort('name')
+  .exec((err, users) => {
+    if(err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(users);
+    }
+  })
+})
+
+//events functions---------------------------------------------------------------
 
 router.put('/invoicePDF', (req, res) => {
   let eventID = req.body;
   Event.findById({ _id: eventID._id }, (error, event) => {
-    // console.log(event.name);
-    // let data  = `
-    //   Event Name        : ${event.name}
-    //   Event Date        : ${event.date}
-    //   Event Address     : ${event.address}
-    //   Event Time        : ${event.start_time}  to ${event.end_time}
-    //   Event Ticket      : R50
-    //   </html>
-    // `
     if (event) {
       res.status(200).send(event);
-      // invoice.pipe(fs.createWriteStream(`${event.name}-${event.date}-invoice.pdf`));
-      // invoice.text(data, 20, 20);
-      // invoice.end();
     } else {
       res.status(401).send(error);
     }
   })
 })
-
 
 router.post('/addEvent', upload.single('poster'), (req, res) => {
   //console.log(req.file);
@@ -194,19 +219,19 @@ router.post('/addEvent', upload.single('poster'), (req, res) => {
   //   });
 
   // } 
-   let eventData = req.body;
- /*  {
-    name: req.body.name,
-    date: req.body.date,
-    userID: req.body.userID,
-    address: req.body.address,
-    // poster: req.file.path,
-    start_time: req.body.start_time,
-    end_time: req.body.end_time,
-    contact: req.body.contact,
-    organiser: req.body.organiser,
-    active: req.body.active
-  };*/
+  let eventData = req.body;
+  /*  {
+     name: req.body.name,
+     date: req.body.date,
+     userID: req.body.userID,
+     address: req.body.address,
+     // poster: req.file.path,
+     start_time: req.body.start_time,
+     end_time: req.body.end_time,
+     contact: req.body.contact,
+     organiser: req.body.organiser,
+     active: req.body.active
+   };*/
   let event = new Event(eventData);
   event.save((err, eventAdded) => {
     if (err) {
@@ -274,6 +299,7 @@ router.put('/getUserEvents', (req, res) => {
     }
   })
 })
+
 router.get('/events', (req, res) => {
   Event.find({ active: true })
     .sort("date")
@@ -303,6 +329,22 @@ router.get('/getEvents', (req, res) => {
       res.status(200).send(items);
     });
 })
+
+router.get('/recentEvents', (req, res) => {
+  Event.find({active: true})
+    .sort("date").limit(3)
+    .exec(function (err, items) {
+      if (err) console.log("Error Finding Query " + err);
+      let date = moment(Date.now()).format('YYYY-MM-DD');
+      let array;
+      items.forEach(element => {
+        array = element.date;
+      });
+
+      res.status(200).send(items);
+    });
+})
+
 router.put('/getActiveStatus', (req, res) => {
   let eventID = req.body;
   Event.findById({ _id: eventID._id })
@@ -316,9 +358,34 @@ router.put('/getActiveStatus', (req, res) => {
       }
     })
 })
-router.get('/special', verifyToken, (req, res) => {
 
+router.post('/sendEmail', (req, res) => {
+  let emailBody = req.body;
 
+  var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'arcbasecorporation@gmail.com',
+      pass: '@K@34ak_am91##'
+    }
+  });
+
+  var mailOptions = {
+    from: 'arcbasecorporation@gmail.com',
+    to: emailBody.toEmail,
+    subject: emailBody.subject,
+    text: emailBody.message
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      res.status(401).send(error);
+      console.log(error);
+    } else {
+      res.status(200).send(info.response);
+      console.log('Email sent: ' + info.response);
+    }
+  });
 })
 
 

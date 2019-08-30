@@ -13,6 +13,8 @@ const eventSchema = new Schema ({
     end_time: String,
     contact: String,
     organiser: String,
-    active: Boolean
+    active: Boolean,
+    normal_price: String,
+    vip_price: String
 })
 module.exports = mongoose.model('event', eventSchema, 'events');
