@@ -58,11 +58,11 @@ function verifyToken(req, res, next) {
 
 // Bookings ------------------------------------------------------------
 function makeid(length) {
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var result = '';
+  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   var charactersLength = characters.length;
-  for ( var i = 0; i < length; i++ ) {
-     result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  for (var i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
 }
@@ -75,9 +75,19 @@ router.post('/addBooking', (req, res) => {
   // let ticketN0 = makeid(5) +'_' + bookings.event_date;
   // bookings.ticket_number = ticketN0.toUpperCase();
   bookings.save((err, bookingInfo) => {
-    if(err) {res.status(401).send(err);}
+    if (err) { res.status(401).send(err); }
     else {
       res.status(200).send(bookingInfo);
+    }
+  })
+})
+
+router.get('/getNotifications', (req, res) => {
+  Booking.find({new: true}, (err, users) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(users);
     }
   })
 })
@@ -185,16 +195,16 @@ router.put('/getUserProfile', (req, res) => {
   })
 })
 
-router.get('/getUsers', (req, res)=> {
-  User.find({}, { 'password': 0} )
-  .sort('name')
-  .exec((err, users) => {
-    if(err) {
-      res.status(401).send(err);
-    } else {
-      res.status(200).send(users);
-    }
-  })
+router.get('/getUsers', (req, res) => {
+  User.find({}, { 'password': 0 })
+    .sort('name')
+    .exec((err, users) => {
+      if (err) {
+        res.status(401).send(err);
+      } else {
+        res.status(200).send(users);
+      }
+    })
 })
 
 //events functions---------------------------------------------------------------
@@ -331,7 +341,7 @@ router.get('/getEvents', (req, res) => {
 })
 
 router.get('/recentEvents', (req, res) => {
-  Event.find({active: true})
+  Event.find({ active: true })
     .sort("date").limit(3)
     .exec(function (err, items) {
       if (err) console.log("Error Finding Query " + err);

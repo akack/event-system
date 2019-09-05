@@ -18,6 +18,7 @@ const bookingSchema = new Schema ({
     total_amount: String,
     ticket_price: String,
     event_organisor: String,
-    new: Boolean
+    new: Boolean,
+    event_post: String
 })
 module.exports = mongoose.model('booking', bookingSchema, 'bookings');
