@@ -82,12 +82,22 @@ router.post('/addBooking', (req, res) => {
   })
 })
 
-router.get('/getNotifications', (req, res) => {
-  Booking.find({new: true}, (err, users) => {
+router.put('/getBooking', (req, res) => {
+  Booking.findById({_id: req.body._id},(err, bookings) => {
     if (err) {
       res.status(401).send(err);
     } else {
-      res.status(200).send(users);
+      res.status(200).send(bookings);
+    }
+  })
+})
+
+router.get('/getNotifications', (req, res) => {
+  Booking.find({new: true}, (err, notifications) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(notifications);
     }
   })
 })
