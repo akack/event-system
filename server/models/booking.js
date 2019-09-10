@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
 
-const bookingSchema = new Schema ({
+const bookingSchema = new Schema({
     ticket_number: String,
     event_name: String,
     event_date: String,
@@ -17,8 +17,9 @@ const bookingSchema = new Schema ({
     ticket_level: String,
     total_amount: String,
     ticket_price: String,
-    event_organisor: String,
+    event_organiser: String,
     new: Boolean,
-    event_post: String
+    event_post: String,
+    rules_accepted: Boolean
 })
 module.exports = mongoose.model('booking', bookingSchema, 'bookings');
