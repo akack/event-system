@@ -102,6 +102,34 @@ router.put("/getBooking", (req, res) => {
   });
 });
 
+router.put("/getTicketInfo", (req, res) => {
+  const ticket = req.body;
+  Booking.findOne({ticket_number: ticket.ticket_number}, (err, ticketInfo) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(ticketInfo);
+    }
+  });
+});
+
+
+router.get("/getBookings", (req, res) => {
+  Booking.find({}, (err, bookings) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(bookings);
+    }
+  });
+
+  // Booking.aggregate([
+  //   {"$group":{"_id":"$event_name","events": { $push: "$$ROOT" }}}
+  // ]).exec(function (error, getbookings) {
+  //   res.status(200).send(getbookings);
+  // });
+});
+
 router.get("/getNotifications", (req, res) => {
   Booking.find({ new: true }, (err, notifications) => {
     if (err) {

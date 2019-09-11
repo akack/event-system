@@ -18,6 +18,7 @@ const bookingSchema = new Schema({
     total_amount: String,
     ticket_price: String,
     event_organiser: String,
+    event_organiser_contact: String,
     new: Boolean,
     event_post: String,
     rules_accepted: Boolean
