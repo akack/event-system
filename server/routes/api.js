@@ -64,7 +64,6 @@ router.post("/addSong", (req, res) => {
     if (err) {
       res.status(401).send(err);
     } else {
-      console.log(songDetails);
       res.status(200).send(songDetails);
     }
   });
@@ -76,7 +75,6 @@ router.put("/deleteSong", (req, res) => {
     if (err) {
       res.status(401).send(err);
     } else {
-      console.log('Deleted', song)
       res.status(200).send(song);
     }
   });
