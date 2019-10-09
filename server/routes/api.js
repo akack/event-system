@@ -10,7 +10,7 @@ const moment = require("moment");
 const nodemailer = require("nodemailer");
 const config = require("../config");
 const Booking = require("../models/booking");
-
+const Song = require("../models/Song");
 //PDF
 const PDF = require("pdfkit");
 const fs = require("fs");
@@ -56,6 +56,52 @@ function verifyToken(req, res, next) {
   req.userId = payload.subject;
   next();
 }
+
+//Music Hub -----------------functions
+router.post("/addSong", (req, res) => {
+  let song = new Song(req.body);
+  song.save((err, songDetails) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      console.log(songDetails);
+      res.status(200).send(songDetails);
+    }
+  });
+});
+
+router.put("/deleteSong", (req, res) => {
+  let songData = req.body;
+  Song.findByIdAndDelete({ _id: songData._id }, (err, song) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      console.log('Deleted', song)
+      res.status(200).send(song);
+    }
+  });
+});
+
+router.get("/getSongs", (req, res) => {
+  
+  Song.find({},(err, songs) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(songs);
+    }
+  });
+});
+
+router.put("/getSongsByGenre", (req, res) => {
+  Song.find({genre: req.body.genre},(err, songs) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(songs);
+    }
+  });
+});
 
 // Bookings ------------------------------------------------------------
 function makeid(length) {
@@ -104,7 +150,7 @@ router.put("/getBooking", (req, res) => {
 
 router.put("/getTicketInfo", (req, res) => {
   const ticket = req.body;
-  Booking.findOne({ticket_number: ticket.ticket_number}, (err, ticketInfo) => {
+  Booking.findOne({ ticket_number: ticket.ticket_number }, (err, ticketInfo) => {
     if (err) {
       res.status(401).send(err);
     } else {
@@ -128,6 +174,14 @@ router.get("/getBookings", (req, res) => {
   // ]).exec(function (error, getbookings) {
   //   res.status(200).send(getbookings);
   // });
+});
+
+router.get("/getBookingsReport", (req, res) => {
+  Booking.aggregate([
+    { "$group": { "_id": "$event_name", "events": { $push: "$$ROOT" } } }
+  ]).exec(function (error, getbookings) {
+    res.status(200).send(getbookings);
+  });
 });
 
 router.get("/getNotifications", (req, res) => {
@@ -157,17 +211,14 @@ router.post("/register", (req, res) => {
   User.findOne({ email: userData.email }, (error, userR) => {
     if (error) {
       console.log(error);
+      res.status(505).send(error);
     } else {
       if (userR) {
         res.status(401).send("Email Already in use");
       } else {
         bcrypt.hash(userData.password, 10, (err, hass) => {
           if (err) {
-            callback(null, {
-              statusCode: err.statusCode || 500,
-              headers: { "Content-Type": "text/plain" },
-              body: "User was not registered."
-            });
+            res.status(501).send(err);
           } else {
             userData.password = hass;
             let user = new User(userData);
@@ -219,9 +270,10 @@ router.post("/login", (req, res) => {
               email: user.email,
               mobile: user.mobile,
               levels: user.levels,
-              _id: user._id
+              _id: user._id,
+              userType: user.userType
             };
-            res.status(200).send({ userDetails });
+            res.status(200).send({userDetails});
           }
         });
       }
@@ -256,6 +308,16 @@ router.get("/getUsers", (req, res) => {
         res.status(200).send(users);
       }
     });
+});
+router.put("/deleteUser", (req, res) => {
+  let userData = req.body;
+  User.findByIdAndDelete({ _id: userData._id }, (err, user) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(user);
+    }
+  });
 });
 
 //events functions---------------------------------------------------------------
@@ -398,7 +460,7 @@ router.put("/getActiveStatus", (req, res) => {
     });
 });
 
-router.post("/sendEmail", (req, res) => {
+router.put("/sendEmail", (req, res) => {
   let emailBody = req.body;
   var transporter = nodemailer.createTransport({
     service: "gmail",
@@ -412,7 +474,10 @@ router.post("/sendEmail", (req, res) => {
     from: "arcbasecorporation@gmail.com",
     to: emailBody.toEmail,
     subject: emailBody.subject,
-    text: emailBody.message
+    text: emailBody.message,
+    attachments: [{
+      path: emailBody.attachment
+    }]
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
