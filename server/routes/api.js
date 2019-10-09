@@ -11,6 +11,9 @@ const nodemailer = require("nodemailer");
 const config = require("../config");
 const Booking = require("../models/booking");
 const Song = require("../models/Song");
+const Company = require("../models/record_company");
+
+
 //PDF
 const PDF = require("pdfkit");
 const fs = require("fs");
@@ -57,6 +60,30 @@ function verifyToken(req, res, next) {
   next();
 }
 
+//Company---
+router.post("/addCompany", (req, res) => {
+  let company = new Company(req.body);
+  company.save((err, companyDetails) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(companyDetails);
+    }
+  });
+});
+
+router.get("/getCompanies", (req, res) => {
+  
+  Company.find({},(err, companies) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(companies);
+    }
+  });
+});
+//--end company
+
 //Music Hub -----------------functions
 router.post("/addSong", (req, res) => {
   let song = new Song(req.body);
@@ -100,6 +127,8 @@ router.put("/getSongsByGenre", (req, res) => {
     }
   });
 });
+
+
 
 // Bookings ------------------------------------------------------------
 function makeid(length) {
@@ -245,6 +274,16 @@ router.post("/register", (req, res) => {
   });
 });
 
+router.put("/getUsersByType", (req, res) => {
+  User.find({userType: req.body.userType},(err, songs) => {
+    if (err) {
+      res.status(401).send(err);
+    } else {
+      res.status(200).send(songs);
+    }
+  });
+});
+
 router.post("/login", (req, res) => {
   let userData = req.body;
   User.findOne({ email: userData.email }, (error, user) => {
@@ -269,7 +308,8 @@ router.post("/login", (req, res) => {
               mobile: user.mobile,
               levels: user.levels,
               _id: user._id,
-              userType: user.userType
+              userType: user.userType,
+              addedRecordCompany: user.addedRecordCompany
             };
             res.status(200).send({userDetails});
           }
@@ -312,6 +352,18 @@ router.put("/deleteUser", (req, res) => {
   User.findByIdAndDelete({ _id: userData._id }, (err, user) => {
     if (err) {
       res.status(401).send(err);
+    } else {
+      res.status(200).send(user);
+    }
+  });
+});
+
+router.post("/updateUser", (req, res) => {
+  let userData = req.body;
+  User.findByIdAndUpdate({ _id: userData._id }, req.body, (err, user) => {
+    if (err) {
+      res.status(401).send(err);
+      console.log(err);
     } else {
       res.status(200).send(user);
     }

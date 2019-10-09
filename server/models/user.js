@@ -9,6 +9,7 @@ const userSchema = new Schema({
     email: String,
     password: String,
     levels: String,
-    userType: String
+    userType: String,
+    addedRecordCompany: String
 })
 module.exports = mongoose.model('user', userSchema, 'users');
